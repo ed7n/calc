@@ -1,139 +1,187 @@
 #!/bin/bash
 
-epl=34
+exl=4
 pst='calc> '
 
-head() {
-  echo -e 'Calc u3r0 by Brendon, 05/01/2021.
+echd() {
+  echo -e 'Calc u3r1 by Brendon, 05/09/2021.
 —An undependable calculator. https://github.com/ed7n/calc\n'
 }
 
+ecus() {
+  echo 'Usage: [<expression>]'
+}
+
 clr() {
-  exp=
-  row=1
-  bex=
-  bro=1
+  exin
+  ex[$exj]=
   [[ "$1" ]] && { ans=0 ; echo 'All Cleared.' ; } || echo 'Expression cleared.'
 }
 
-con() {
-  case "$inp" in
-    ans | mem | copy | rand ) ins "$inp" ;;
-  esac
-  bex=$exp
-  [[ "$exp" ]] \
-      && { (( $pre )) && exp="$inp $exp" || exp="$exp $inp" ; } || exp=$inp
-  bro=$row
-  (( row++ ))
+cutd() {
+  cuts "$1" '/' "$2"
 }
 
-ecut() {
-  echo -n "$exp" | cut -d '/' -f "$1"
+cutf() {
+  cuts "$1" '.' "$2"
 }
 
-eval() {
-  out=$(echo $(( $exp ))) || return
-  [[ "$1" ]] || ans=$out
-  (( $ext )) \
-      && [[ "$exp" == *([[:space:]])*(-)+([[:digit:]])*([[:space:]])/*([[:space:]])*(-)+([[:digit:]])*([[:space:]]) ]] \
-      && exdv
-  echo ' ans: '"$out"
-  [[ "$1" ]] || { bex=$exp ; exp= ; bro=$row ; row=1 ; }
+cuts() {
+  echo -n "$1" | cut -d "$2" -f "$3"
 }
 
-exdv() {
-  tmp=$(ecut '2')
-  acc=$(( $(ecut '1') % $tmp ))
-  [[ $(( $acc * 10 )) == "$acc"'0' ]] || return
-  while [[ $(( $acc * 10 )) == "$acc"'0' ]]; do
+div() {
+  (( $2 )) || { echo 'Division by zero.' ; return 1 ; }
+  acc=$(( $1 % $2 ))
+  [[ $(( acc * 10 )) == "$acc"'0' ]] || { echo "$(( $1 / $2 ))" ; return ; }
+  rg0=
+  rg1=
+  while [[ $(( acc * 10 )) == "$acc"'0' ]]; do
     (( acc *= 10 ))
+    (( acc < $2 )) && rg1=$rg1'0'
   done
-  acc=$(( $acc / $tmp ))
-  tmp=
-  (( $acc < 0 )) && { (( acc *= -1 )) ; (( $out )) || tmp=- ; }
-  out=$tmp$out.$acc
+  (( acc /= $2 ))
+  (( acc < 0 )) && { (( acc *= -1 )) ; (( $1 < $2 )) && rg0=- ; }
+  out=$rg0$(( $1 / $2 )).$rg1$acc
 }
 
-ext() {
-  (( $ext )) && ext=0 || { shopt -s 'extglob' && ext=1 \
-      || { echo 'The `extglob` shell option can not be set.' ; return ; } ; }
+evl() {
+  exev || return
+  [[ "$1" ]] && { ans=$(cutf "$out" '1') ; exin ; ex[$exj]= ; }
+  echo ' ans: '"$out"
+}
+
+excn() {
+  ins "$inp"
+  [[ "${ex[$exj]}" ]] && { [[ "$pre" == '1' ]] \
+      && acc="$inp ${ex[$exj]}" \
+      || acc="${ex[$exj]} $inp" ; } \
+      || acc=$inp
+  exin
+  ex[$exj]=$acc
+}
+
+exdc() {
+  [[ "$exj" == '0' ]] && exj=$(( exl - 1 )) || (( exj-- ))
+}
+
+exev() {
+  [[ "$fps" == '1' ]] \
+      && [[ "$(exp)" == *([[:space:]])*(-)+([[:digit:]])*([[:space:]])/*([[:space:]])*(-)+([[:digit:]])*([[:space:]]) ]] \
+      && { div "$(cutd "$(exp)" '1')" "$(cutd "$(exp)" '2')" || return ; } \
+      || out=$(echo $(( $(exp) )))
+}
+
+exin() {
+  [[ "$1" ]] && { exj=$(( (exj + 1) % exl )) ; return ; }
+  exj=$(( (exj + 1) % exl ))
+  exk=$exj
+  (( exi == exk )) && exi=$(( (exi + 1) % exl ))
+}
+
+exp() {
+  echo -n "${ex[$exj]}"
+}
+
+fps() {
+  shopt -q 'extglob' || shopt -s 'extglob' \
+      || { echo 'The `extglob` shell option can not be set.' ; return ; }
   echo -n 'Simple divisions will be evaluated '
-  (( $ext )) && echo -n 'fractionally' || echo -n 'integrally'
+  [[ "$fps" == '1' ]] \
+      && { fps=0 ; echo -n 'integrally' ; } \
+      || { fps=1 ; echo -n 'fractionally' ; }
   echo '.'
 }
 
 ins() {
   case "$1" in
     ans ) inp=$ans ;;
-    mem ) inp=$mem ;;
+    m | rcl ) inp=$mem ;;
     rand ) inp=$RANDOM ;;
-    copy ) inp=$exp ;;
+    copy ) inp=$(exp) ;;
+    * ) return ;;
   esac
   echo "$pst$inp"
 }
 
 mon() {
-  echo -e ' exp: '"$exp" \
-      '\n ans: '"$ans" \
-      '\n mem: '"$mem" \
-      '\n pre: '"$pre" \
-      '\n ext: '"$ext"
-  [[ "$1" ]] && echo -e ' acc: '"$acc" \
-      '\n bex: '"$bex" \
-      '\n bro: '"$bro" \
-      '\n inp: '"$inp" \
-      '\n out: '"$out" \
-      '\n row: '"$row" \
-      '\n tmp: '"$tmp"
+  [[ "$1" ]] || echo ' exp: '"$(exp)"
+  echo ' ans: '"$ans"'
+ mem: '"$mem"'
+ pre: '"$pre"'
+ fps: '"$fps"
+  [[ "$1" ]] || return
+  echo ' acc: '"$acc"
+  acc=0
+  until [[ "$acc" == "$exl" ]]; do
+    echo ' ex'"$acc"': '"${ex[(( acc++ ))]}"
+  done
+  echo ' exi: '"$exi"'
+ exj: '"$exj"'
+ exk: '"$exk"'
+ inp: '"$inp"'
+ out: '"$out"'
+ rg0: '"$rg0"'
+ rg1: '"$rg1"
 }
 
 pre() {
-  (( $pre )) && pre=0 || pre=1
   echo -n 'Subsequent inputs will be '
-  (( $pre )) && echo -n 'prepended' || echo -n 'appended'
+  [[ "$pre" == '1' ]] \
+      && { pre=0 ; echo -n 'appended' ; } \
+      || { pre=1 ; echo -n 'prepended' ; }
   echo ' to the expression.'
 }
 
+rdo() {
+  [[ "$exj" == "$exk" ]] \
+      && { echo 'Reached the top of the undo stack.' ; return ; }
+  exin 1
+  echo 'Redid last change to expression.'
+}
+
 ref() {
-  echo '——Functions
-     ac     Clears expression and result.
-     ans    Inserts result.
-     clr    Clears expression.
-     cls    Clears screen.
-     copy   Inserts expression.
-  =, eval   Evaluates expression.
-     ext    Toggles fractional precision for simple divisions.
-  ?, help   Prints this reference.
-     mem    Inserts saved result.
-  p, peek   Previews expression evaluation.
-     pre    Toggles input prepending.
-     quit   Quits program.
-     rand   Inserts a random number within [0, 32767].
-     stat   Prints calculator variables.
-     sto    Saves result to memory.
-     undo   Undos last change to expression.
-     vars   Prints program variables.'
+  echo '—Functions
+Enter these individually in a separate input.
+    ac      Clears expression and last result.
+    ans     Inserts last result.
+    clr     Clears expression.
+    cls     Clears screen.
+    copy    Inserts expression.
+ =, eval    Evaluates expression.
+    fps     Toggles fractional precision for simple divisions.
+ ?, help    Prints this reference.
+ p, peek    Previews evaluation of expression.
+    pre     Toggles input prepending.
+    quit    Quits program.
+    rand    Inserts a random number within [0, 32767].
+ m, rcl     Inserts saved result.
+rd, redo    Redoes last change to expression.
+ps, stat    Prints calculator state.
+    sto     Saves last result to memory.
+ud, undo    Undoes last change to expression.
+    vars    Prints program variables.'
   read -sp '[Enter] to continue.'
   echo '
 
-——Common Syntax
-  -       Arithmetic negation
-  ! ~     Logical and bitwise negation
-  * / %   Multiplication, division, remainder (modulus)
-  + -     Addition, subtraction
-  << >>   Logical shifts
-  &       Bitwise AND
-  ^       Bitwise XOR
-  |       Bitwise OR
-  ( )     Precedence grouping
+—Common Syntax
+-           Arithmetic negation
+! ~         Logical and bitwise negation
+* / %       Multiplication, division, remainder (modulus)
++ -         Addition, subtraction
+<< >>       Bit shifts
+<= >= < >   Comparison
+== !=       Equality, inequality
+&           Bitwise AND
+^           Bitwise XOR
+|           Bitwise OR
+( )         Precedence grouping
 
-Assignment
-  = *= /= %= += -= <<= >>= &= ^= |=
+Assignment: = *= /= %= += -= <<= >>= &= ^= |=
 
-Notation
-  10    base-10 "Decimal"
-  0xA   base-16 "Hexadecimal"
-  012   base-8  "Octal"
+10    base-10 "Decimal"
+0xA   base-16 "Hexadecimal"
+012   base-8  "Octal"
 
 Refer to the shell documentation for specific syntaxes.'
 }
@@ -143,49 +191,52 @@ sto() {
   echo ' mem: '"$mem"
 }
 
-undo() {
-  (( $row != $bro )) && {
-    tmp=$exp ; exp=$bex ; bex=$tmp ; tmp=$row ; row=$bro ; bro=$tmp ;
-    echo 'Undid last change to expression. `undo` again to reverse.' ;
-  } || echo 'Nothing to undo; expression was last cleared.'
+udo() {
+  [[ "$exj" == "$exi" ]] \
+      && { echo 'Reached the bottom of the undo stack.' ; return ; }
+  exdc
+  echo 'Undid last change to expression.'
 }
 
-[[ "$1" == "--help" ]] && { head ; echo 'Usage: [<expression>]' ; exit 0 ; }
-[[ "$@" ]] && { ans=$(echo $(( $@ )) ) \
-    && { echo "$ans" ; exit 0 ; } \
-    || exit 1 ; }
-acc=0
+[[ "$1" == "--help" ]] && { echd ; ecus ; exit 0 ; }
+acc=
 ans=0
-bex=
-bro=1
-exp=
-ext=0
+exi=0
+exj=0
+exk=0
+fps=0
 inp=
 mem=0
 out=
 pre=0
-row=1
-tmp=
-head
+rg0=
+rg1=
+until [[ "$exj" == "$exl" ]]; do
+  ex[(( exj++ ))]=
+done
+exj=0
+[[ "$@" ]] && { { inp=$@ ; excn ; exev ; exit 0 ; } || exit 1 ; }
+echd
 echo '`help` for reference.'
 while true; do
   inp=
   read -ep "$pst" inp
   [[ "$inp" ]] || continue
   case "$inp" in
-    = | eval ) eval ;;
-    ac ) clr all ;;
+    ac ) clr 1 ;;
     clr ) clr ;;
     cls ) clear 2> /dev/null ;;
-    ext ) ext ;;
+    = | eval ) evl 1 ;;
+    fps ) fps ;;
     \? | help ) ref ;;
-    p | peek ) eval peek ;;
+    p | peek ) evl ;;
     pre ) pre ;;
     quit ) exit 0 ;;
-    stat ) mon ;;
+    rd | redo ) rdo ;;
+    ps | stat ) mon ;;
     sto ) sto ;;
-    undo ) undo ;;
-    vars ) mon all ;;
-    * ) con ;;
+    ud | undo ) udo ;;
+    vars ) mon 1 ;;
+    * ) excn ;;
   esac
 done

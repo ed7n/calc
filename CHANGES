@@ -1,0 +1,41 @@
+Calc: Changes
+
+—Update 3
+
+——Revision 1, 05/09/2021.
+- Fixed fractional results less than 0.1.
+- Moved `ext` to `fps`.
+- Moved `mem` to `m` and `rcl`.
+- Edited help reference.
+- Shorthands for `stat` and `undo`.
+- `redo`.
+- `undo` and `redo` works on a stack.
+
+——Revision 0, 05/01/2021.
+- Evaluate simple divisions fractionally with `ext`.
+- Moved `info` to `stat`.
+- Remade help reference.
+- Removed support for Windows.
+- Removed `exit`.
+- Shorthands for `help` and `peek`.
+- `vars`.
+
+—Update 2
+
+——Revision 0, 01/23/2019.
+- Remade from scratch.
+- Bash version.
+- Last result is insertable with `ans`.
+- Moved partial calculations to `peek`.
+- Moved `0` `help`.
+- Moved `00` to `ac`.
+- Moved `000` to `exit` and `quit`.
+- Unlimited inputs.
+- `ac` no longer clears screen, use `cls`.
+- `help` no longer prints calculator state, use `info`.
+- `copy`, `mem`, `pre`, `rand`, `sto`, `undo`.
+
+—Update 1
+
+——Revision 0, 12/17/2013.
+- Initial release.
