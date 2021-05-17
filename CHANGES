@@ -2,6 +2,9 @@ Calc: Changes
 
 —Update 3
 
+——Revision 2, 05/16/2021.
+- Edited help reference.
+
 ——Revision 1, 05/09/2021.
 - Fixed fractional results less than 0.1.
 - Moved `ext` to `fps`.

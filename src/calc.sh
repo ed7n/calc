@@ -4,7 +4,7 @@ exl=4
 pst='calc> '
 
 echd() {
-  echo -e 'Calc u3r1 by Brendon, 05/09/2021.
+  echo -e 'Calc u3r2 by Brendon, 05/16/2021.
 —An undependable calculator. https://github.com/ed7n/calc\n'
 }
 
@@ -141,49 +141,63 @@ rdo() {
 }
 
 ref() {
-  echo '—Functions
+  echo '——Functions
 Enter these individually in a separate input.
-    ac      Clears expression and last result.
-    ans     Inserts last result.
-    clr     Clears expression.
-    cls     Clears screen.
-    copy    Inserts expression.
- =, eval    Evaluates expression.
-    fps     Toggles fractional precision for simple divisions.
- ?, help    Prints this reference.
- p, peek    Previews evaluation of expression.
-    pre     Toggles input prepending.
-    quit    Quits program.
-    rand    Inserts a random number within [0, 32767].
- m, rcl     Inserts saved result.
-rd, redo    Redoes last change to expression.
-ps, stat    Prints calculator state.
-    sto     Saves last result to memory.
-ud, undo    Undoes last change to expression.
-    vars    Prints program variables.'
+      ac      Clears expression and last result.
+      ans     Inserts last result.
+      clr     Clears expression.
+      cls     Clears screen.
+      copy    Inserts expression.
+   =, eval    Evaluates expression.
+      fps     Toggles fractional precision for simple divisions.
+   ?, help    Prints this reference.
+   p, peek    Previews evaluation of expression.
+      pre     Toggles input prepending.
+      quit    Quits program.
+      rand    Inserts a random number within [0, 32767].
+   m, rcl     Inserts saved result.
+  rd, redo    Redoes last change to expression.
+  ps, stat    Prints calculator state.
+      sto     Saves last result to memory.
+  ud, undo    Undoes last change to expression.
+      vars    Prints program variables.'
   read -sp '[Enter] to continue.'
   echo '
 
-—Common Syntax
--           Arithmetic negation
-! ~         Logical and bitwise negation
-* / %       Multiplication, division, remainder (modulus)
-+ -         Addition, subtraction
-<< >>       Bit shifts
-<= >= < >   Comparison
-== !=       Equality, inequality
-&           Bitwise AND
-^           Bitwise XOR
-|           Bitwise OR
-( )         Precedence grouping
+——Syntax
+Operators are listed in order of decreasing precedence.
+  ( )         Precedence grouping.
+  x++ x--     Variable post-increment and -decrement
+  ++x --x     Variable  pre-increment and -decrement
+  -           Arithmetic negation
+  ! ~         Logical and bitwise negation
+  **          Exponentiation
+  * / %       Multiplication, division, remainder
+  + -         Addition, subtraction
+  << >>       Bitwise shifts
+  <= >= < >   Comparison
+  == !=       Equality, inequality
+  &           Bitwise AND
+  ^           Bitwise XOR
+  |           Bitwise OR
+  &&          Logical AND
+  ||          Logical OR
 
-Assignment: = *= /= %= += -= <<= >>= &= ^= |=
+Conditional Operator
+  <condition> ? <expr. if true> : <expr. if false>
 
-10    base-10 "Decimal"
-0xA   base-16 "Hexadecimal"
-012   base-8  "Octal"
+Assignment
+  = *= /= %= += -= <<= >>= &= ^= |=
 
-Refer to the shell documentation for specific syntaxes.'
+Expression Separator
+  <expr.> , <expr.>
+
+The above is adapted from section 6.5 of the Bash Reference Manual.
+
+Numerical Notation
+  10    base-10 "decimal"
+  0xA   base-16 "hexadecimal"
+  012   base-8  "octal"'
 }
 
 sto() {
