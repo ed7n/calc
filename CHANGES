@@ -2,11 +2,14 @@ Calc: Changes
 
 —Update 3
 
+——Revision 3, 09/13/2021.
+- Fixed fractional division with integral quotients.
+
 ——Revision 2, 05/16/2021.
 - Edited help reference.
 
 ——Revision 1, 05/09/2021.
-- Fixed fractional results less than 0.1.
+- Fixed fractional results of less than 0.1.
 - Moved `ext` to `fps`.
 - Moved `mem` to `m` and `rcl`.
 - Edited help reference.
