@@ -1,170 +1,171 @@
-#!/bin/bash
+#!/bin/env bash
+
+{
+  declare -p ews || declare -Ax ews=([base]="${0%/*}" [exec]="${0}" \
+      [name]='Calc')
+} &> /dev/null
 
 # Undo stack size.
-exl=4
-# Prompt string.
-pst='calc> '
-
-# Prints header.
-echd() {
-  echo -e 'Calc u3r3 by Brendon, 09/13/2021.
+ews[exl]=4
+# Header string.
+ews[hdr]='Calc u3r4 by Brendon, 05/06/2022.
 —An undependable calculator. https://github.com/ed7n/calc\n'
-}
-
-# Prints usage.
-ecus() {
-  echo 'Usage: [<expression>]'
-}
+# Prompt string.
+ews[pst]='> '
 
 # Clears expression, and answer with a truthy `$1`.
 clr() {
-  exin
-  ex[$exj]=
-  [[ "$1" ]] && { ans=0 ; echo 'All Cleared.' ; } || echo 'Expression cleared.'
+  exin 'all'
+  ex["${ews[exj]}"]=''
+  [ "${1}" ] && {
+    ews[ans]=0
+    echo -n 'All' || :
+  } || echo -n 'Expression'
+  echo ' cleared.'
 }
 
-# Returns field `$2` of `$1` delimited by `/`.
-cutd() {
-  cuts "$1" '/' "$2"
-}
-
-# Returns field `$2` of `$1` delimited by `.`.
-cutf() {
-  cuts "$1" '.' "$2"
-}
-
-# Returns field `$3` of `$1` delimited by `$2`.
-cuts() {
-  echo -n "$1" | cut -d "$2" -f "$3"
-}
-
-# Divide `$1` by `$2` with fractional precision.
+# Divide `$2` by `$3` with fractional precision to variable `$1`.
 div() {
-  (( $2 )) || { echo 'Division by zero.' ; return 1 ; }
-  acc=$(( $1 % $2 ))
-  [[ $(( acc * 10 )) == "$acc"'0' ]] || { out=$(( $1 / $2 )) ; return ; }
-  rg0=
-  rg1=
-  while true; do
-    (( acc *= 10 ))
-    (( acc < $2 )) && rg1=$rg1'0'
-    [[ $(( acc * 10 )) == "$acc"'0' ]] || break
+  (( ${3} )) || {
+    echo 'Division by zero.'
+    return 1
+  }
+  [ "${1}" == 'out' ] || local -n out="${1}"
+  local ddn=$(( ${2} )) dsn=$(( ${3} ))
+  local dda="${ddn#-}" dsa="${dsn#-}"
+  local fra=$(( dda % dsa )) zro=''
+  while [ $(( fra * 10 )) == "${fra}"'0' ]; do
+    (( fra *= 10 ))
+    (( fra < dsa )) && zro="${zro}"'0'
   done
-  (( acc /= $2 ))
-  (( acc < 0 )) && { (( acc *= -1 )) ; (( $1 < $2 )) && rg0=- ; }
-  out=$rg0$(( $1 / $2 )).$rg1$acc
+  (( dda < dsa && ${ddn:0:4} * ${dsn:0:4} < 0 )) && {
+    out='-' || :
+  } || out=''
+  out="${out}"$(( ddn / dsn ))
+  (( fra )) && {
+    (( fra /= dsa ))
+    out="${out}"'.'"${zro}${fra%%+(0)}"
+  }
 }
 
 # Evaluates expression and prints its result, and saves them with a truthy `$1`.
 evl() {
-  exev || return
-  [[ "$1" ]] && { ans=$(cutf "$out" '1') ; exin ; ex[$exj]= ; }
-  echo ' ans: '"$out"
+  local out
+  exev out && {
+    [ "${1}" ] && {
+      ews[ans]="${out#-0}"
+      ews[ans]="${ews[ans]%%.*}"
+      [ "${ews[ans]}" ] || ews[ans]=0
+      exin 'all'
+      ex["${ews[exj]}"]=''
+    }
+    echo "${out}"
+  }
 }
 
-# Concatenates input to expression.
+# Concatenates `REPLY` to expression.
 excn() {
-  ins "$inp"
-  [[ "${ex[$exj]}" ]] && { [[ "$pre" == '1' ]] \
-      && acc="$inp ${ex[$exj]}" \
-      || acc="${ex[$exj]} $inp" ; } \
-      || acc=$inp
-  exin
-  ex[$exj]=$acc
+  ins "${REPLY}"
+  local exp="${ex[${ews[exj]}]}"
+  [ "${exp}" ] && {
+    [ "${ews[pre]}" ] && {
+      exp="${REPLY}"' '"${exp}" || :
+    } || exp="${exp}"' '"${REPLY}" || :
+  } || exp="${REPLY}"
+  exin 'all'
+  ex["${ews[exj]}"]="${exp}"
 }
 
 # Decrements undo stack cursor index.
 exdc() {
-  [[ "$exj" == '0' ]] && exj=$(( exl - 1 )) || (( exj-- ))
+  (( ews[exj] )) && {
+    (( ews[exj]-- )) || :
+  } || ews[exj]=$(( ews[exl] - 1 ))
 }
 
-# Evaluates expression to output.
-exev() {
-  [[ "$fps" == '1' ]] \
-      && [[ "$(exp)" == *([[:space:]])*(-)+([[:digit:]])*([[:space:]])/*([[:space:]])*(-)+([[:digit:]])*([[:space:]]) ]] \
-      && { div "$(cutd "$(exp)" '1')" "$(cutd "$(exp)" '2')" || return ; } \
-      || out=$(echo $(( $(exp) )))
-}
-
-# Increments undo stack cursor index, and head and tail indeces with a falsy
+# Increments undo stack cursor index, and head and tail indeces with a truthy
 # `$1`.
 exin() {
-  exj=$(( (exj + 1) % exl ))
-  [[ "$1" ]] && return
-  exk=$exj
-  (( exi == exk )) && exi=$(( (exi + 1) % exl ))
+  ews[exj]=$(( (ews[exj] + 1) % ews[exl] ))
+  [ "${1}" ] && {
+    ews[exk]="${ews[exj]}"
+    (( ews[exk] == ews[exi] )) && ews[exi]=$(( (ews[exi] + 1) % ews[exl] ))
+  }
 }
 
-# Echoes expression.
-exp() {
-  echo -n "${ex[$exj]}"
+# Evaluates expression to variable `$1`.
+exev() {
+  [ "${1}" == 'out' ] || local -n out="${1}"
+  [ "${ews[fps]}" ] \
+      && [[ "${ex[${ews[exj]}]}" == ?([+-])+([[:digit:]])*([[:space:]])/*([[:space:]])?([+-])+([[:digit:]]) ]] \
+      && {
+    div out "${ex[${ews[exj]}]%%*([[:space:]])/*}" \
+        "${ex[${ews[exj]}]##*/*([[:space:]])}" || :
+  } || out=$(echo $(( ex[ews[exj]] )))
 }
 
-# Toggles fractional precision for simple divisions.
+# Toggles fractional precision for elementary divisions.
 fps() {
-  shopt -q 'extglob' || shopt -s 'extglob' \
-      || { echo 'The `extglob` shell option can not be set.' ; return ; }
-  echo -n 'Simple divisions will be evaluated '
-  [[ "$fps" == '1' ]] \
-      && { fps=0 ; echo -n 'integrally' ; } \
-      || { fps=1 ; echo -n 'fractionally' ; }
+  echo -n 'Elementary divisions will be evaluated '
+  [ "${ews[fps]}" ] && {
+    ews[fps]=''
+    echo -n 'integrally' || :
+  } || {
+    ews[fps]='fps'
+    echo -n 'fractionally'
+  }
   echo '.'
 }
 
 # Appends key `$1` to input.
 ins() {
-  case "$1" in
-    ans ) inp=$ans ;;
-    m | rcl ) inp=$mem ;;
-    rand ) inp=$RANDOM ;;
-    copy ) inp=$(exp) ;;
-    * ) return ;;
+  case "${1}" in
+    'ans' )
+      REPLY="${ews[ans]}" ;;
+    'm' | 'rcl' )
+      REPLY="${ews[mem]}" ;;
+    'rand' )
+      REPLY="${RANDOM}" ;;
+    'copy' )
+      REPLY="${ex[${ews[exj]}]}" ;;
+    * )
+      return ;;
   esac
-  echo "$pst$inp"
+  echo "${ews[pst]}""${REPLY}"
 }
 
 # Prints calculator state, and all other program variables with a truthy `$1`.
 mon() {
-  [[ "$1" ]] || echo ' exp: '"$(exp)"
-  echo ' ans: '"$ans"'
- mem: '"$mem"'
- pre: '"$pre"'
- fps: '"$fps"
-  [[ "$1" ]] || return
-  echo ' acc: '"$acc"
-  acc=0
-  until [[ "$acc" == "$exl" ]]; do
-    echo ' ex'"$acc"': '"${ex[(( acc++ ))]}"
-  done
-  echo ' exi: '"$exi"'
- exj: '"$exj"'
- exk: '"$exk"'
- inp: '"$inp"'
- out: '"$out"'
- rg0: '"$rg0"'
- rg1: '"$rg1"
+  echo 'fps: '"${ews[fps]}"'
+pre: '"${ews[pre]}"'
+ans: '"${ews[ans]}"'
+mem: '"${ews[mem]}"
+  [ "${1}" ] && {
+    for idx in $(eval echo {0..$(( ${#ex[*]} - 1 ))}); do
+      echo 'ex'"${idx}"': '"${ex[${idx}]}"
+    done
+    echo 'exi: '"${ews[exi]}"'
+exj: '"${ews[exj]}"'
+exk: '"${ews[exk]}" || :
+  } || echo 'exp: '"${ex[${ews[exj]}]}"
 }
 
 # Toggles input prepending.
 pre() {
   echo -n 'Subsequent inputs will be '
-  [[ "$pre" == '1' ]] \
-      && { pre=0 ; echo -n 'appended' ; } \
-      || { pre=1 ; echo -n 'prepended' ; }
+  [ "${ews[pre]}" ] && {
+    ews[pre]=''
+    echo -n 'appended' || :
+  } || {
+    ews[pre]='pre'
+    echo -n 'prepended'
+  }
   echo ' to the expression.'
-}
-
-# Redoes last change to expression.
-rdo() {
-  [[ "$exj" == "$exk" ]] \
-      && { echo 'Reached the top of the undo stack.' ; return ; }
-  exin 1
-  echo 'Redid last change to expression.'
 }
 
 # Prints reference.
 ref() {
-  echo '——Functions
+  read -sp '——Functions
 Enter these individually in a separate input.
       ac      Clears expression and last result.
       ans     Inserts last result.
@@ -172,7 +173,7 @@ Enter these individually in a separate input.
       cls     Clears screen.
       copy    Inserts expression.
    =, eval    Evaluates expression.
-      fps     Toggles fractional precision for simple divisions.
+      fps     Toggles fractional precision for elementary divisions.
    ?, help    Prints this reference.
    p, peek    Previews evaluation of expression.
       pre     Toggles input prepending.
@@ -183,8 +184,8 @@ Enter these individually in a separate input.
   ps, stat    Prints calculator state.
       sto     Saves last result to memory.
   ud, undo    Undoes last change to expression.
-      vars    Prints program variables.'
-  read -sp '[Enter] to continue.'
+      vars    Prints program variables.
+[Enter] to continue.'
   echo '
 
 ——Syntax
@@ -225,68 +226,103 @@ Numerical Notation
 
 # Saves last result to memory.
 sto() {
-  mem=$ans
-  echo ' mem: '"$mem"
+  ews[mem]="${ews[ans]}"
+  echo 'mem: '"${ews[mem]}"
 }
 
 # Undoes last change to expression.
 udo() {
-  [[ "$exj" == "$exi" ]] \
-      && { echo 'Reached the bottom of the undo stack.' ; return ; }
-  exdc
-  echo 'Undid last change to expression.'
+  [ "${ews[exj]}" == "${ews[exi]}" ] && {
+    echo 'Reached the bottom of the undo stack.' || :
+  } || {
+    exdc
+    echo 'Undid last change to expression.'
+  }
 }
 
-[[ "$1" == "--help" ]] && { echd ; ecus ; exit 0 ; }
-# Accumulator.
-acc=
+# Redoes last change to expression.
+rdo() {
+  [ "${ews[exj]}" == "${ews[exk]}" ] && {
+    echo 'Reached the top of the undo stack.' || :
+  } || {
+    exin
+    echo 'Redid last change to expression.'
+  }
+}
+
+shopt -q 'extglob' || shopt -qs 'extglob' || {
+  echo '`extglob` shell option can not be set.'
+  exit 1
+}
+
+[[ "${1}" == ?(-)?(-)[Hh]?([Ee][Ll][Pp]) ]] && {
+  echo -e "${ews[hdr]}"'\nUsage: [<expression>]'
+  exit
+}
+
 # Answer.
-ans=0
+ews[ans]=0
 # Undo stack tail index.
-exi=0
+ews[exi]=0
 # Undo stack cursor index.
-exj=0
+ews[exj]=0
 # Undo stack head index.
-exk=0
+ews[exk]=0
 # Fractional precision flag.
-fps=0
-# Input.
-inp=
+ews[fps]='fps'
 # Memory.
-mem=0
-# Output.
-out=
+ews[mem]=0
 # Input prepending flag.
-pre=0
-# Registers
-rg0=
-rg1=
-until [[ "$exj" == "$exl" ]]; do
-  ex[(( exj++ ))]=
+ews[pre]=''
+until (( ews[exj] == ews[exl] )); do
+  ex[(( ews[exj]++ ))]=''
 done
-exj=0
-[[ "$@" ]] && { { inp=$@ ; excn ; exev ; exit 0 ; } || exit 1 ; }
-echd
-echo '`help` for reference.'
+ews[exj]=0
+[ "${*}" ] && {
+  {
+    REPLY="${@}"
+    excn
+    exev ews[mem]
+    echo "${ews[mem]}"
+    exit
+  } || exit
+}
+echo -e "${ews[hdr]}"'\n`help` for reference.'
 while true; do
-  inp=
-  read -ep "$pst" inp
-  [[ "$inp" ]] || continue
-  case "$inp" in
-    ac ) clr 1 ;;
-    clr ) clr ;;
-    cls ) clear 2> /dev/null ;;
-    = | eval ) evl 1 ;;
-    fps ) fps ;;
-    \? | help ) ref ;;
-    p | peek ) evl ;;
-    pre ) pre ;;
-    quit ) exit 0 ;;
-    rd | redo ) rdo ;;
-    ps | stat ) mon ;;
-    sto ) sto ;;
-    ud | undo ) udo ;;
-    vars ) mon 1 ;;
-    * ) excn ;;
+  read -ep "${ews[pst]}"
+  REPLY="${REPLY%+([[:space:]])}"
+  REPLY="${REPLY#+([[:space:]])}"
+  [ "${REPLY}" ] || continue
+  case "${REPLY}" in
+    'ac' )
+      clr 'ac' ;;
+    'clr' )
+      clr ;;
+    'cls' )
+      clear 2> /dev/null || eval printf '\\u000A%.0s' {1..${LINES:-24}} ;;
+    '=' | 'eval' )
+      evl 'ans' ;;
+    'fps' )
+      fps ;;
+    '\?' | 'help' )
+      ref ;;
+    'p' | 'peek' )
+      evl ;;
+    'pre' )
+      pre ;;
+    'quit' )
+      exit 0 ;;
+    'rd' | 'redo' )
+      rdo ;;
+    'ps' | 'stat' )
+      mon ;;
+    'sto' )
+      sto ;;
+    'ud' | 'undo' )
+      udo ;;
+    'vars' )
+      mon 'all' ;;
+    * )
+      excn ;;
   esac
 done

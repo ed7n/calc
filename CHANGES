@@ -2,6 +2,19 @@ Calc: Changes
 
 —Update 3
 
+——Revision 4, 05/06/2022.
+- Refactored.
+- Edited default prompt string.
+- Edited `fps` wording.
+- Enable fractional division by default.
+- Fixed fractional division with multi-signed and negative operands.
+- Flexible `--help` switch.
+- Removed answer header on evaluation.
+- Removed dependency on `cut`.
+- Require `extglob` shell option.
+- Strip trailing fractional zeros.
+- Trim inputs.
+
 ——Revision 3, 09/13/2021.
 - Fixed fractional division with integral quotients.
 
@@ -9,10 +22,10 @@ Calc: Changes
 - Edited help reference.
 
 ——Revision 1, 05/09/2021.
+- Edited help reference.
 - Fixed fractional results of less than 0.1.
 - Moved `ext` to `fps`.
 - Moved `mem` to `m` and `rcl`.
-- Edited help reference.
 - Shorthands for `stat` and `undo`.
 - `redo`.
 - `undo` and `redo` works on a stack.
