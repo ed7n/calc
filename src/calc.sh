@@ -8,10 +8,93 @@
 # Undo stack size.
 ews[exl]=4
 # Header string.
-ews[hdr]='Calc u3r4 by Brendon, 05/06/2022.
+ews[hdr]='Calc u3r5 by Brendon, 05/07/2022.
 —An undependable calculator. https://github.com/ed7n/calc\n'
-# Prompt string.
-ews[pst]='> '
+# Help text set.
+declare -ar HTXS=(
+'——About
+Calc is a frontend to Bash'"'"'s arithmetic feature. As such, evaluations are
+done in fixed-width integers with no check for overflow.
+
+Inputs are space-delimited parts of an expression, which is to be evaluated with
+either a `=` or `eval` input.
+
+More information can be found in its homepage: [https://ed7n.github.io/calc]'
+
+'——Calc Functions
+Enter these individually in a separate input.
+      ac      Clears expression and last result.
+      ans     Inserts last result.
+      clr     Clears expression.
+      cls     Clears screen.
+      copy    Inserts expression.
+   =, eval    Evaluates expression.
+      fps     Toggles fractional precision for elementary divisions.
+   ?, help    Prints this help text.
+   p, peek    Previews evaluation of expression.
+      pre     Toggles input prepending.
+      quit    Quits program.
+      rand    Inserts a random number within [0, 32767].
+   m, rcl     Inserts saved result.
+  rd, redo    Redoes last change to expression.
+  ps, stat    Prints calculator state.
+      sto     Saves last result to memory.
+  ud, undo    Undoes last change to expression.
+      vars    Prints program variables.'
+
+'——Bash Arithmetic Operators [1/2]
+Operators and their precedence, associativity, and values are the same as those
+in C. The following operators are grouped by levels of equal-precedence
+operators. The levels are listed in order of decreasing precedence.
+
+  x++ x--     Variable post-increment and -decrement
+  ++x --x     Variable  pre-increment and -decrement
+  - +         Unary minus and plus
+  ! ~         Logical and bitwise negation
+  **          Exponentiation
+  * / %       Multiplication, division, remainder
+  + -         Addition, subtraction
+  << >>       Left and right bitwise shifts
+  <= >= < >   Comparison
+  == !=       Equality and inequality
+  &           Bitwise AND
+  ^           Bitwise exclusive OR
+  |           Bitwise OR
+  &&          Logical AND
+  ||          Logical OR'
+
+'——Bash Arithmetic Operators [2/2]
+Conditional Operator
+  <cond.> ? <expr. if true> : <expr. if false>
+
+Assignment
+  = *= /= %= += -= <<= >>= &= ^= |=
+
+Comma
+  <expr.> , <expr.>
+
+Sub-expressions in parentheses are evaluated first and may override the
+precedence rules above.'
+
+'——Numerical Notation
+Integer constants follow the C language definition, without suffixes or
+character constants. The following lists common representations of the number
+ten.
+
+  10    base-10 "decimal"
+  0XA
+  0xA   base-16 "hexadecimal"
+  012   base-8  "octal"
+
+Otherwise, numbers take the form `[base#]n`, where the optional `base#` is a
+decimal number between 2 and 64 representing the arithmetic base, and `n` is a
+number in that base. If `base#` is omitted, then base 10 is used. When
+specifying `n`, if a non-digit is required, the digits greater than 9 are
+represented by the lowercase letters, the uppercase letters, '"'@'"', and
+'"'_'"', in that order. If `base#` is less than or equal to 36, lowercase and
+uppercase letters may be used interchangeably to represent numbers between 10
+and 35.'
+)
 
 # Clears expression, and answer with a truthy `$1`.
 clr() {
@@ -38,7 +121,7 @@ div() {
     (( fra *= 10 ))
     (( fra < dsa )) && zro="${zro}"'0'
   done
-  (( dda < dsa && ${ddn:0:4} * ${dsn:0:4} < 0 )) && {
+  (( dda < dsa && ${ddn:0:1}1 * ${dsn:0:1}1 < 0 )) && {
     out='-' || :
   } || out=''
   out="${out}"$(( ddn / dsn ))
@@ -53,9 +136,8 @@ evl() {
   local out
   exev out && {
     [ "${1}" ] && {
-      ews[ans]="${out#-0}"
-      ews[ans]="${ews[ans]%%.*}"
-      [ "${ews[ans]}" ] || ews[ans]=0
+      ews[ans]="${out%%.*}"
+      [ "${ews[ans]}" == '-0' ] && ews[ans]=0
       exin 'all'
       ex["${ews[exj]}"]=''
     }
@@ -117,6 +199,18 @@ fps() {
   echo '.'
 }
 
+# Prints help text.
+hlp() {
+  for idx in $(eval echo {0..$(( ${#HTXS[*]} - 1 ))}); do
+    read -sp '
+'"${HTXS[${idx}]}"'
+
+[Enter] to continue.'
+    echo
+  done
+  echo
+}
+
 # Appends key `$1` to input.
 ins() {
   case "${1}" in
@@ -131,7 +225,7 @@ ins() {
     * )
       return ;;
   esac
-  echo "${ews[pst]}""${REPLY}"
+  echo '< '"${REPLY}"
 }
 
 # Prints calculator state, and all other program variables with a truthy `$1`.
@@ -161,67 +255,6 @@ pre() {
     echo -n 'prepended'
   }
   echo ' to the expression.'
-}
-
-# Prints reference.
-ref() {
-  read -sp '——Functions
-Enter these individually in a separate input.
-      ac      Clears expression and last result.
-      ans     Inserts last result.
-      clr     Clears expression.
-      cls     Clears screen.
-      copy    Inserts expression.
-   =, eval    Evaluates expression.
-      fps     Toggles fractional precision for elementary divisions.
-   ?, help    Prints this reference.
-   p, peek    Previews evaluation of expression.
-      pre     Toggles input prepending.
-      quit    Quits program.
-      rand    Inserts a random number within [0, 32767].
-   m, rcl     Inserts saved result.
-  rd, redo    Redoes last change to expression.
-  ps, stat    Prints calculator state.
-      sto     Saves last result to memory.
-  ud, undo    Undoes last change to expression.
-      vars    Prints program variables.
-[Enter] to continue.'
-  echo '
-
-——Syntax
-Operators are listed in order of decreasing precedence.
-  ( )         Precedence grouping.
-  x++ x--     Variable post-increment and -decrement
-  ++x --x     Variable  pre-increment and -decrement
-  -           Arithmetic negation
-  ! ~         Logical and bitwise negation
-  **          Exponentiation
-  * / %       Multiplication, division, remainder
-  + -         Addition, subtraction
-  << >>       Bitwise shifts
-  <= >= < >   Comparison
-  == !=       Equality, inequality
-  &           Bitwise AND
-  ^           Bitwise XOR
-  |           Bitwise OR
-  &&          Logical AND
-  ||          Logical OR
-
-Conditional Operator
-  <condition> ? <expr. if true> : <expr. if false>
-
-Assignment
-  = *= /= %= += -= <<= >>= &= ^= |=
-
-Expression Separator
-  <expr.> , <expr.>
-
-The above is adapted from section 6.5 of the Bash Reference Manual.
-
-Numerical Notation
-  10    base-10 "decimal"
-  0xA   base-16 "hexadecimal"
-  012   base-8  "octal"'
 }
 
 # Saves last result to memory.
@@ -287,9 +320,9 @@ ews[exj]=0
     exit
   } || exit
 }
-echo -e "${ews[hdr]}"'\n`help` for reference.'
+echo -e "${ews[hdr]}"'\n`help` for help text.'
 while true; do
-  read -ep "${ews[pst]}"
+  read -ep '> '
   REPLY="${REPLY%+([[:space:]])}"
   REPLY="${REPLY#+([[:space:]])}"
   [ "${REPLY}" ] || continue
@@ -305,7 +338,7 @@ while true; do
     'fps' )
       fps ;;
     '\?' | 'help' )
-      ref ;;
+      hlp ;;
     'p' | 'peek' )
       evl ;;
     'pre' )

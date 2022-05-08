@@ -2,6 +2,11 @@ Calc: Changes
 
 —Update 3
 
+——Revision 5, 05/07/2022.
+- Edited help text.
+- Edited `help` wording.
+- Removed custom prompt string.
+
 ——Revision 4, 05/06/2022.
 - Refactored.
 - Edited default prompt string.
