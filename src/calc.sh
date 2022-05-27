@@ -8,10 +8,10 @@
 # Undo stack size.
 ews[exl]=4
 # Header string.
-ews[hdr]='Calc u3r5 by Brendon, 05/07/2022.
+ews[hdr]='Calc u3r6 by Brendon, 05/26/2022.
 —An undependable calculator. https://github.com/ed7n/calc\n'
-# Help text set.
-declare -ar HTXS=(
+# Manual pages.
+declare -ar CLC_MTXS=(
 '——About
 Calc is a frontend to Bash'"'"'s arithmetic feature. As such, evaluations are
 done in fixed-width integers with no check for overflow.
@@ -30,7 +30,8 @@ Enter these individually in a separate input.
       copy    Inserts expression.
    =, eval    Evaluates expression.
       fps     Toggles fractional precision for elementary divisions.
-   ?, help    Prints this help text.
+   ?, help    Prints this function reference.
+      man     Prints manual pages.
    p, peek    Previews evaluation of expression.
       pre     Toggles input prepending.
       quit    Quits program.
@@ -99,7 +100,7 @@ and 35.'
 # Clears expression, and answer with a truthy `$1`.
 clr() {
   exin 'all'
-  ex["${ews[exj]}"]=''
+  clcExs["${ews[exj]}"]=''
   [ "${1}" ] && {
     ews[ans]=0
     echo -n 'All' || :
@@ -107,55 +108,55 @@ clr() {
   echo ' cleared.'
 }
 
-# Divide `$2` by `$3` with fractional precision to variable `$1`.
+# Divides `$2` by `$3` with fractional precision to variable `$1`.
 div() {
   (( ${3} )) || {
     echo 'Division by zero.'
     return 1
   }
-  [ "${1}" == 'out' ] || local -n out="${1}"
-  local ddn=$(( ${2} )) dsn=$(( ${3} ))
-  local dda="${ddn#-}" dsa="${dsn#-}"
-  local fra=$(( dda % dsa )) zro=''
-  while [ $(( fra * 10 )) == "${fra}"'0' ]; do
-    (( fra *= 10 ))
-    (( fra < dsa )) && zro="${zro}"'0'
+  [ "${1}" == 'clcOut' ] || local -n clcOut="${1}"
+  local clcDdn=$(( ${2} )) clcDsn=$(( ${3} ))
+  local clcDda="${clcDdn#-}" clcDsa="${clcDsn#-}"
+  local clcFra=$(( clcDda % clcDsa )) clcZro=''
+  while [ $(( clcFra * 10 )) == "${clcFra}"'0' ]; do
+    (( clcFra *= 10 ))
+    (( clcFra < clcDsa )) && clcZro="${clcZro}"'0'
   done
-  (( dda < dsa && ${ddn:0:1}1 * ${dsn:0:1}1 < 0 )) && {
-    out='-' || :
-  } || out=''
-  out="${out}"$(( ddn / dsn ))
-  (( fra )) && {
-    (( fra /= dsa ))
-    out="${out}"'.'"${zro}${fra%%+(0)}"
+  (( clcDda < clcDsa && ${clcDdn:0:1}1 * ${clcDsn:0:1}1 < 0 )) && {
+    clcOut='-' || :
+  } || clcOut=''
+  clcOut="${clcOut}"$(( clcDdn / clcDsn ))
+  (( clcFra )) && {
+    (( clcFra /= clcDsa ))
+    clcOut="${clcOut}"'.'"${clcZro}${clcFra%%+(0)}"
   }
 }
 
 # Evaluates expression and prints its result, and saves them with a truthy `$1`.
 evl() {
-  local out
-  exev out && {
+  local clcOut
+  exev clcOut && {
     [ "${1}" ] && {
-      ews[ans]="${out%%.*}"
+      ews[ans]="${clcOut%%.*}"
       [ "${ews[ans]}" == '-0' ] && ews[ans]=0
       exin 'all'
-      ex["${ews[exj]}"]=''
+      clcExs["${ews[exj]}"]=''
     }
-    echo "${out}"
+    echo "${clcOut}"
   }
 }
 
 # Concatenates `REPLY` to expression.
 excn() {
   ins "${REPLY}"
-  local exp="${ex[${ews[exj]}]}"
-  [ "${exp}" ] && {
+  local clcExp="${clcExs[${ews[exj]}]}"
+  [ "${clcExp}" ] && {
     [ "${ews[pre]}" ] && {
-      exp="${REPLY}"' '"${exp}" || :
-    } || exp="${exp}"' '"${REPLY}" || :
-  } || exp="${REPLY}"
+      clcExp="${REPLY}"' '"${clcExp}" || :
+    } || clcExp="${clcExp}"' '"${REPLY}" || :
+  } || clcExp="${REPLY}"
   exin 'all'
-  ex["${ews[exj]}"]="${exp}"
+  clcExs["${ews[exj]}"]="${clcExp}"
 }
 
 # Decrements undo stack cursor index.
@@ -177,13 +178,13 @@ exin() {
 
 # Evaluates expression to variable `$1`.
 exev() {
-  [ "${1}" == 'out' ] || local -n out="${1}"
+  [ "${1}" == 'clcOut' ] || local -n clcOut="${1}"
   [ "${ews[fps]}" ] \
-      && [[ "${ex[${ews[exj]}]}" == ?([+-])+([[:digit:]])*([[:space:]])/*([[:space:]])?([+-])+([[:digit:]]) ]] \
+      && [[ "${clcExs[${ews[exj]}]}" == ?([+-])+([[:digit:]])*([[:space:]])/*([[:space:]])?([+-])+([[:digit:]]) ]] \
       && {
-    div out "${ex[${ews[exj]}]%%*([[:space:]])/*}" \
-        "${ex[${ews[exj]}]##*/*([[:space:]])}" || :
-  } || out=$(echo $(( ex[ews[exj]] )))
+    div "${1}" "${clcExs[${ews[exj]}]%%*([[:space:]])/*}" \
+        "${clcExs[${ews[exj]}]##*/*([[:space:]])}" || :
+  } || clcOut="$(echo $(( clcExs[ews[exj]] )))"
 }
 
 # Toggles fractional precision for elementary divisions.
@@ -199,18 +200,6 @@ fps() {
   echo '.'
 }
 
-# Prints help text.
-hlp() {
-  for idx in $(eval echo {0..$(( ${#HTXS[*]} - 1 ))}); do
-    read -sp '
-'"${HTXS[${idx}]}"'
-
-[Enter] to continue.'
-    echo
-  done
-  echo
-}
-
 # Appends key `$1` to input.
 ins() {
   case "${1}" in
@@ -221,11 +210,27 @@ ins() {
     'rand' )
       REPLY="${RANDOM}" ;;
     'copy' )
-      REPLY="${ex[${ews[exj]}]}" ;;
+      REPLY="${clcExs[${ews[exj]}]}" ;;
     * )
       return ;;
   esac
   echo '< '"${REPLY}"
+}
+
+# Prints manual text.
+man() {
+  [ "${1}" ] && {
+    echo "${CLC_MTXS[1]}" || :
+  } || {
+    for clcIdx in $(eval echo {0..$(( ${#CLC_MTXS[*]} - 2 ))}); do
+      read -sp '                    ''
+'"${CLC_MTXS[${clcIdx}]}"'
+
+[Enter] to continue.'
+      echo -en '\r'
+    done
+    echo -e "${CLC_MTXS[$(( ${#CLC_MTXS[*]} - 1 ))]}"'\n'
+  }
 }
 
 # Prints calculator state, and all other program variables with a truthy `$1`.
@@ -235,13 +240,13 @@ pre: '"${ews[pre]}"'
 ans: '"${ews[ans]}"'
 mem: '"${ews[mem]}"
   [ "${1}" ] && {
-    for idx in $(eval echo {0..$(( ${#ex[*]} - 1 ))}); do
-      echo 'ex'"${idx}"': '"${ex[${idx}]}"
+    for clcIdx in $(eval echo {0..$(( ${#clcExs[*]} - 1 ))}); do
+      echo 'ex'"${clcIdx}"': '"${clcExs[${clcIdx}]}"
     done
     echo 'exi: '"${ews[exi]}"'
 exj: '"${ews[exj]}"'
 exk: '"${ews[exk]}" || :
-  } || echo 'exp: '"${ex[${ews[exj]}]}"
+  } || echo 'exp: '"${clcExs[${ews[exj]}]}"
 }
 
 # Toggles input prepending.
@@ -308,7 +313,7 @@ ews[mem]=0
 # Input prepending flag.
 ews[pre]=''
 until (( ews[exj] == ews[exl] )); do
-  ex[(( ews[exj]++ ))]=''
+  clcExs[(( ews[exj]++ ))]=''
 done
 ews[exj]=0
 [ "${*}" ] && {
@@ -320,7 +325,7 @@ ews[exj]=0
     exit
   } || exit
 }
-echo -e "${ews[hdr]}"'\n`help` for help text.'
+echo -e "${ews[hdr]}"'\n`help` for function reference.'
 while true; do
   read -ep '> '
   REPLY="${REPLY%+([[:space:]])}"
@@ -332,13 +337,15 @@ while true; do
     'clr' )
       clr ;;
     'cls' )
-      clear 2> /dev/null || eval printf '\\u000A%.0s' {1..${LINES:-24}} ;;
+      clear 2> /dev/null || eval printf '\\uA%.0s' {1..${LINES:-24}} ;;
     '=' | 'eval' )
       evl 'ans' ;;
     'fps' )
       fps ;;
     '\?' | 'help' )
-      hlp ;;
+      man 'help' ;;
+    'man' )
+      man ;;
     'p' | 'peek' )
       evl ;;
     'pre' )
