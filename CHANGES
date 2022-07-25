@@ -2,6 +2,11 @@ Calc: Changes
 
 —Update 3
 
+——Revision 7, 07/25/2022.
+- Edited project subtitle.
+- Updated manual on variables.
+- Updated project address.
+
 ——Revision 6, 05/26/2022.
 - `help` prints function reference only.
 - Moved `help` to `man`.

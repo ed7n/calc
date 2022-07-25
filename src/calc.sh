@@ -1,15 +1,13 @@
 #!/bin/env bash
 
 {
-  declare -p ews || declare -Ax ews=([base]="${0%/*}" [exec]="${0}" \
-      [name]='Calc')
+  declare -p ews || declare -Ax ews=([base]="${0%/*}" [exec]="${0}" [levl]=1 \
+      [name]='Calc' [sign]='u3r7 by Brendon, 07/25/2022.' \
+      [desc]='Bash arithmetic frontend. https://ed7n.github.io/calc')
 } &> /dev/null
 
 # Undo stack size.
 ews[exl]=4
-# Header string.
-ews[hdr]='Calc u3r6 by Brendon, 05/26/2022.
-—An undependable calculator. https://github.com/ed7n/calc\n'
 # Manual pages.
 declare -ar CLC_MTXS=(
 '——About
@@ -17,7 +15,8 @@ Calc is a frontend to Bash'"'"'s arithmetic feature. As such, evaluations are
 done in fixed-width integers with no check for overflow.
 
 Inputs are space-delimited parts of an expression, which is to be evaluated with
-either a `=` or `eval` input.
+either a `=` or `eval` input. Evaluations are done in isolation, so variables do
+not carry over--use the memory functions instead.
 
 More information can be found in its homepage: [https://ed7n.github.io/calc]'
 
@@ -293,11 +292,11 @@ shopt -q 'extglob' || shopt -qs 'extglob' || {
   exit 1
 }
 
+echo -e "${ews[name]}"' '"${ews[sign]}"'\n——'"${ews[desc]}"'\n'
 [[ "${1}" == ?(-)?(-)[Hh]?([Ee][Ll][Pp]) ]] && {
-  echo -e "${ews[hdr]}"'\nUsage: [<expression>]'
+  echo 'Usage: [<expression>]'
   exit
 }
-
 # Answer.
 ews[ans]=0
 # Undo stack tail index.
@@ -325,7 +324,7 @@ ews[exj]=0
     exit
   } || exit
 }
-echo -e "${ews[hdr]}"'\n`help` for function reference.'
+echo '`help` for function reference.'
 while true; do
   read -ep '> '
   REPLY="${REPLY%+([[:space:]])}"
