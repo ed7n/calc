@@ -1,34 +1,35 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 {
-  declare -p ews || declare -Ax ews=([base]="${0%/*}" [exec]="${0}" [levl]=1 \
-      [name]='Calc' [sign]='u3r7 by Brendon, 07/25/2022.' \
+  declare -p ews || declare -A ews=([base]="${0%/*}" [exec]="${0}" [levl]=1 \
+      [name]='Calc' [sign]='u3r8 by Brendon, 12/31/2022.' \
       [desc]='Bash arithmetic frontend. https://ed7n.github.io/calc')
 } &> /dev/null
 
 # Undo stack size.
-ews[exl]=4
+readonly CLC_EXL=8
+
 # Manual pages.
-declare -ar CLC_MTXS=(
+readonly -a CLC_MANS=(
 '——About
 Calc is a frontend to Bash'"'"'s arithmetic feature. As such, evaluations are
 done in fixed-width integers with no check for overflow.
 
-Inputs are space-delimited parts of an expression, which is to be evaluated with
-either a `=` or `eval` input. Evaluations are done in isolation, so variables do
-not carry over--use the memory functions instead.
+Each input line is part of an expression, which is to be evaluated with either a
+`=` or `eval` input. Evaluations are done in isolation, so assignments do not
+carry over.
 
 More information can be found in its homepage: [https://ed7n.github.io/calc]'
 
 '——Calc Functions
-Enter these individually in a separate input.
+Enter these individually in a separate line.
       ac      Clears expression and last result.
       ans     Inserts last result.
       clr     Clears expression.
       cls     Clears screen.
       copy    Inserts expression.
    =, eval    Evaluates expression.
-      fps     Toggles fractional precision for elementary divisions.
+      fps     Toggles fractional precision for simple divisions.
    ?, help    Prints this function reference.
       man     Prints manual pages.
    p, peek    Previews evaluation of expression.
@@ -76,10 +77,8 @@ Comma
 Sub-expressions in parentheses are evaluated first and may override the
 precedence rules above.'
 
-'——Numerical Notation
-Integer constants follow the C language definition, without suffixes or
-character constants. The following lists common representations of the number
-ten.
+'——Numerical Notations
+The following lists common representations of the number ten.
 
   10    base-10 "decimal"
   0XA
@@ -88,174 +87,186 @@ ten.
 
 Otherwise, numbers take the form `[base#]n`, where the optional `base#` is a
 decimal number between 2 and 64 representing the arithmetic base, and `n` is a
-number in that base. If `base#` is omitted, then base 10 is used. When
-specifying `n`, if a non-digit is required, the digits greater than 9 are
-represented by the lowercase letters, the uppercase letters, '"'@'"', and
-'"'_'"', in that order. If `base#` is less than or equal to 36, lowercase and
-uppercase letters may be used interchangeably to represent numbers between 10
-and 35.'
-)
+number in that base.
 
-# Clears expression, and answer with a truthy `$1`.
+When specifying `n`, if a non-digit is required, then the digits greater than 9
+are represented by the lowercase letters, the uppercase letters, '"'@'"', and
+'"'_'"', in that order. If `base#` is less than or equal to 36, then lowercase
+and uppercase letters may be used interchangeably to represent numbers between
+10 and 35.'
+)
+# Undo stack.
+declare -a clcExs
+# Answer.
+clcAns=0
+# Undo stack tail index.
+clcExi=0
+# Undo stack cursor index.
+clcExj=0
+# Undo stack head index.
+clcExk=0
+# Fractional precision flag.
+clcFps='fps'
+# Memory.
+clcMem=0
+# Nul variable.
+clcNul=
+# Input prepending flag.
+clcPre=
+# For use in array iterations.
+IFS=' '
+
+# Clears expression, and answer with `$@`.
 clr() {
   exin 'all'
-  clcExs["${ews[exj]}"]=''
-  [ "${1}" ] && {
-    ews[ans]=0
+  clcExs[${clcExj}]=
+  (( ${#} )) && {
+    clcAns=0
     echo -n 'All' || :
   } || echo -n 'Expression'
   echo ' cleared.'
 }
 
-# Divides `$2` by `$3` with fractional precision to variable `$1`.
+# Divides `$2` by `$3` with fractional precision to `$1`.
 div() {
   (( ${3} )) || {
     echo 'Division by zero.'
     return 1
   }
   [ "${1}" == 'clcOut' ] || local -n clcOut="${1}"
-  local clcDdn=$(( ${2} )) clcDsn=$(( ${3} ))
-  local clcDda="${clcDdn#-}" clcDsa="${clcDsn#-}"
-  local clcFra=$(( clcDda % clcDsa )) clcZro=''
+  local clcDdv=$(( ${2} )) clcDsv=$(( ${3} ))
+  local clcDdm="${clcDdv#-}" clcDsm="${clcDsv#-}"
+  local clcFra=$(( clcDdm % clcDsm )) clcZro
   while [ $(( clcFra * 10 )) == "${clcFra}"'0' ]; do
     (( clcFra *= 10 ))
-    (( clcFra < clcDsa )) && clcZro="${clcZro}"'0'
+    (( clcFra < clcDsm )) && clcZro+='0'
   done
-  (( clcDda < clcDsa && ${clcDdn:0:1}1 * ${clcDsn:0:1}1 < 0 )) && {
+  (( clcDdm < clcDsm && ${clcDdv:0:1}1 * ${clcDsv:0:1}1 < 0 )) && {
     clcOut='-' || :
-  } || clcOut=''
-  clcOut="${clcOut}"$(( clcDdn / clcDsn ))
+  } || clcOut=
+  clcOut+=$(( clcDdv / clcDsv ))
   (( clcFra )) && {
-    (( clcFra /= clcDsa ))
-    clcOut="${clcOut}"'.'"${clcZro}${clcFra%%+(0)}"
+    (( clcFra /= clcDsm ))
+    clcOut+='.'"${clcZro}${clcFra%%+(0)}"
   }
 }
 
-# Evaluates expression and prints its result, and saves them with a truthy `$1`.
+# Evaluates expression and prints its result, and saves them with `$@`.
 evl() {
   local clcOut
   exev clcOut && {
-    [ "${1}" ] && {
-      ews[ans]="${clcOut%%.*}"
-      [ "${ews[ans]}" == '-0' ] && ews[ans]=0
+    (( ${#} )) && {
+      clcAns="${clcOut%%.*}"
+      [ "${clcAns}" == '-0' ] && clcAns=0
       exin 'all'
-      clcExs["${ews[exj]}"]=''
+      clcExs[${clcExj}]=
     }
     echo "${clcOut}"
   }
 }
 
-# Concatenates `REPLY` to expression.
+# Concatenates `$REPLY` to expression.
 excn() {
   ins "${REPLY}"
-  local clcExp="${clcExs[${ews[exj]}]}"
-  [ "${clcExp}" ] && {
-    [ "${ews[pre]}" ] && {
+  local clcExp="${clcExs[${clcExj}]}"
+  (( ${#clcExp} )) && {
+    (( ${#clcPre} )) && {
       clcExp="${REPLY}"' '"${clcExp}" || :
-    } || clcExp="${clcExp}"' '"${REPLY}" || :
+    } || clcExp+=' '"${REPLY}" || :
   } || clcExp="${REPLY}"
   exin 'all'
-  clcExs["${ews[exj]}"]="${clcExp}"
+  clcExs[${clcExj}]="${clcExp}"
 }
 
 # Decrements undo stack cursor index.
 exdc() {
-  (( ews[exj] )) && {
-    (( ews[exj]-- )) || :
-  } || ews[exj]=$(( ews[exl] - 1 ))
+  (( clcExj )) && {
+    (( clcExj-- )) || :
+  } || (( clcExj = CLC_EXL - 1 ))
 }
 
-# Increments undo stack cursor index, and head and tail indeces with a truthy
-# `$1`.
+# Increments undo stack cursor index, and head and tail indeces with `$@`.
 exin() {
-  ews[exj]=$(( (ews[exj] + 1) % ews[exl] ))
-  [ "${1}" ] && {
-    ews[exk]="${ews[exj]}"
-    (( ews[exk] == ews[exi] )) && ews[exi]=$(( (ews[exi] + 1) % ews[exl] ))
+  (( clcExj = (clcExj + 1) % CLC_EXL ))
+  (( ${#} )) && {
+    (( clcExi == clcExj && (clcExi = (clcExi + 1) % CLC_EXL) ))
+    clcExk="${clcExj}"
   }
 }
 
-# Evaluates expression to variable `$1`.
+# Evaluates expression to `$1`.
 exev() {
   [ "${1}" == 'clcOut' ] || local -n clcOut="${1}"
-  [ "${ews[fps]}" ] \
-      && [[ "${clcExs[${ews[exj]}]}" == ?([+-])+([[:digit:]])*([[:space:]])/*([[:space:]])?([+-])+([[:digit:]]) ]] \
+  (( ${#clcFps} )) \
+      && [[ "${clcExs[${clcExj}]}" == ?([+-])+([[:digit:]])*([[:space:]])/*([[:space:]])?([+-])+([[:digit:]]) ]] \
       && {
-    div "${1}" "${clcExs[${ews[exj]}]%%*([[:space:]])/*}" \
-        "${clcExs[${ews[exj]}]##*/*([[:space:]])}" || :
-  } || clcOut="$(echo $(( clcExs[ews[exj]] )))"
+    div clcOut "${clcExs[${clcExj}]%%*([[:space:]])/*}" \
+        "${clcExs[${clcExj}]##*/*([[:space:]])}" || :
+  } || clcOut="$(echo $(( clcExs[clcExj] )))"
 }
 
-# Toggles fractional precision for elementary divisions.
+# Toggles fractional precision for simple divisions.
 fps() {
-  echo -n 'Elementary divisions will be evaluated '
-  [ "${ews[fps]}" ] && {
-    ews[fps]=''
+  echo -n 'Simple divisions will be evaluated '
+  (( ${#clcFps} )) && {
+    clcFps=
     echo -n 'integrally' || :
   } || {
-    ews[fps]='fps'
+    clcFps='fps'
     echo -n 'fractionally'
   }
   echo '.'
 }
 
-# Appends key `$1` to input.
+# Substitutes key `$1` into `$REPLY`.
 ins() {
   case "${1}" in
     'ans' )
-      REPLY="${ews[ans]}" ;;
+      REPLY="${clcAns}" ;;
     'm' | 'rcl' )
-      REPLY="${ews[mem]}" ;;
+      REPLY="${clcMem}" ;;
     'rand' )
       REPLY="${RANDOM}" ;;
     'copy' )
-      REPLY="${clcExs[${ews[exj]}]}" ;;
+      REPLY="${clcExs[${clcExj}]}" ;;
     * )
       return ;;
   esac
   echo '< '"${REPLY}"
 }
 
-# Prints manual text.
+# Prints all manual pages, or the second one with `$@`.
 man() {
-  [ "${1}" ] && {
-    echo "${CLC_MTXS[1]}" || :
+  (( ${#} )) && {
+    echo "${CLC_MANS[1]}" || :
   } || {
-    for clcIdx in $(eval echo {0..$(( ${#CLC_MTXS[*]} - 2 ))}); do
-      read -sp '                    ''
-'"${CLC_MTXS[${clcIdx}]}"'
-
-[Enter] to continue.'
-      echo -en '\r'
+    for clcIdx in $(eval echo "{0..$(( ${#CLC_MANS[@]} - 2 ))}"); do
+      read -sp $'\n'"${CLC_MANS[${clcIdx}]}"$'\n\n[Enter] to continue.' clcNul
+      echo -en '\r                    \r'
     done
-    echo -e "${CLC_MTXS[$(( ${#CLC_MTXS[*]} - 1 ))]}"'\n'
+    echo -e "${CLC_MANS[(( ${#CLC_MANS[@]} - 1 ))]}"'\n'
   }
 }
 
-# Prints calculator state, and all other program variables with a truthy `$1`.
+# Prints calculator state, or all program variables with `$@`.
 mon() {
-  echo 'fps: '"${ews[fps]}"'
-pre: '"${ews[pre]}"'
-ans: '"${ews[ans]}"'
-mem: '"${ews[mem]}"
-  [ "${1}" ] && {
-    for clcIdx in $(eval echo {0..$(( ${#clcExs[*]} - 1 ))}); do
-      echo 'ex'"${clcIdx}"': '"${clcExs[${clcIdx}]}"
-    done
-    echo 'exi: '"${ews[exi]}"'
-exj: '"${ews[exj]}"'
-exk: '"${ews[exk]}" || :
-  } || echo 'exp: '"${clcExs[${ews[exj]}]}"
+  (( ${#} )) && {
+    declare -p clcExs clcAns clcExi clcExj clcExk clcFps clcMem clcNul clcPre \
+        IFS || :
+  } || {
+    echo -e 'fps: '"${clcFps}"'\npre: '"${clcPre}"'\nans: '"${clcAns}"'
+mem: '"${clcMem}"'\nexp: '"${clcExs[${clcExj}]}"
+  }
 }
 
 # Toggles input prepending.
 pre() {
   echo -n 'Subsequent inputs will be '
-  [ "${ews[pre]}" ] && {
-    ews[pre]=''
+  (( ${#clcPre} )) && {
+    clcPre=
     echo -n 'appended' || :
   } || {
-    ews[pre]='pre'
+    clcPre='pre'
     echo -n 'prepended'
   }
   echo ' to the expression.'
@@ -263,13 +274,13 @@ pre() {
 
 # Saves last result to memory.
 sto() {
-  ews[mem]="${ews[ans]}"
-  echo 'mem: '"${ews[mem]}"
+  clcMem="${clcAns}"
+  echo 'mem: '"${clcMem}"
 }
 
 # Undoes last change to expression.
 udo() {
-  [ "${ews[exj]}" == "${ews[exi]}" ] && {
+  [ "${clcExj}" == "${clcExi}" ] && {
     echo 'Reached the bottom of the undo stack.' || :
   } || {
     exdc
@@ -279,7 +290,7 @@ udo() {
 
 # Redoes last change to expression.
 rdo() {
-  [ "${ews[exj]}" == "${ews[exk]}" ] && {
+  [ "${clcExj}" == "${clcExk}" ] && {
     echo 'Reached the top of the undo stack.' || :
   } || {
     exin
@@ -291,52 +302,38 @@ shopt -q 'extglob' || shopt -qs 'extglob' || {
   echo '`extglob` shell option can not be set.'
   exit 1
 }
-
-echo -e "${ews[name]}"' '"${ews[sign]}"'\n——'"${ews[desc]}"'\n'
 [[ "${1}" == ?(-)?(-)[Hh]?([Ee][Ll][Pp]) ]] && {
   echo 'Usage: [<expression>]'
-  exit
+  exit 0
 }
-# Answer.
-ews[ans]=0
-# Undo stack tail index.
-ews[exi]=0
-# Undo stack cursor index.
-ews[exj]=0
-# Undo stack head index.
-ews[exk]=0
-# Fractional precision flag.
-ews[fps]='fps'
-# Memory.
-ews[mem]=0
-# Input prepending flag.
-ews[pre]=''
-until (( ews[exj] == ews[exl] )); do
-  clcExs[(( ews[exj]++ ))]=''
-done
-ews[exj]=0
-[ "${*}" ] && {
+(( ${#} )) && {
   {
     REPLY="${@}"
     excn
-    exev ews[mem]
-    echo "${ews[mem]}"
-    exit
-  } || exit
+    exev clcMem
+    echo "${clcMem}"
+    exit 0
+  } || exit 1
 }
-echo '`help` for function reference.'
+echo -en '\033]2;'"${ews[name]}"'\007'
+echo -e "${ews[name]}"' '"${ews[sign]}"'\n——'"${ews[desc]}"'\n
+`help` for function reference.'
 while true; do
-  read -ep '> '
+  read -erp '> '
   REPLY="${REPLY%+([[:space:]])}"
   REPLY="${REPLY#+([[:space:]])}"
-  [ "${REPLY}" ] || continue
+  (( ${#REPLY} )) || continue
   case "${REPLY}" in
     'ac' )
       clr 'ac' ;;
     'clr' )
       clr ;;
     'cls' )
-      clear 2> /dev/null || eval printf '\\uA%.0s' {1..${LINES:-24}} ;;
+      clear 2> /dev/null || {
+        (( LINES )) && {
+          eval printf '\\uA%.0s' "{1..${LINES}}" || :
+        } || eval printf '\\uA%.0s' {1..24}
+      } ;;
     '=' | 'eval' )
       evl 'ans' ;;
     'fps' )
@@ -350,6 +347,7 @@ while true; do
     'pre' )
       pre ;;
     'quit' )
+      echo -en '\033]2;\007'
       exit 0 ;;
     'rd' | 'redo' )
       rdo ;;
