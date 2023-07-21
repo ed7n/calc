@@ -2,7 +2,7 @@
 
 {
   declare -p ews || declare -A ews=([base]="${0%/*}" [exec]="${0}" [levl]=1 \
-      [name]='Calc' [sign]='u3r8 by Brendon, 12/31/2022.' \
+      [name]='Calc' [sign]='u3r9 by Brendon, 07/21/2023.' \
       [desc]='Bash arithmetic frontend. https://ed7n.github.io/calc')
 } &> /dev/null
 
@@ -338,7 +338,7 @@ while true; do
       evl 'ans' ;;
     'fps' )
       fps ;;
-    '\?' | 'help' )
+    '?' | 'help' )
       man 'help' ;;
     'man' )
       man ;;
